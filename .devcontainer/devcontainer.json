@@ -1,0 +1,37 @@
+{
+	"name": "Python OpenCV Dev",
+	"build": {
+		// .devcontainer 폴더 상위에 있는 Dockerfile을 지정
+		"dockerfile": "./Dockerfile",
+		// 빌드 컨텍스트를 프로젝트 루트(..)로 설정
+		"context": ".."
+	},
+	
+	// Dockerfile의 "WORKDIR /app"과 일치시켜서
+	// VS Code가 열릴 때 바로 이 경로를 바라보게 설정합니다.
+	"workspaceFolder": "/app",
+
+	// 컨테이너 생성 후 VS Code 설정을 자동으로 적용합니다.
+	"customizations": {
+		"vscode": {
+			"settings": {
+				// 컨테이너 내부의 파이썬 인터프리터 경로 지정
+				"python.defaultInterpreterPath": "/usr/local/bin/python",
+				// Pylance 사용 설정
+				"python.languageServer": "Pylance"
+			},
+			"extensions": [
+				// 파이썬 개발 필수 확장 프로그램 자동 설치
+				"ms-python.python",
+				"ms-python.vscode-pylance"
+			]
+		}
+	},
+
+	// [선택 사항] 컨테이너가 생성된 후 실행할 명령어
+	// requirements.txt 내용이 바뀌었을 때를 대비해 한 번 더 실행해주면 좋습니다.
+	"postCreateCommand": "pip install -r requirements.txt"
+
+	// [참고] 만약 root가 아닌 다른 유저를 사용하고 싶다면 아래 주석을 해제하세요.
+	// "remoteUser": "vscode"
+}

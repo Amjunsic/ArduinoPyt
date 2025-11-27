@@ -1,0 +1,29 @@
+FROM python:3.9-slim
+
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1
+
+# 3. 작업 디렉토리 생성
+WORKDIR /app
+
+# 6. 소스 코드 복사
+COPY . .
+
+# 5. 의존성 파일 복사 및 설치
+COPY requirements.txt .
+
+# 4. [핵심] OpenCV 실행을 위한 필수 시스템 라이브러리 설치
+# 라즈베리파이와 PC(Linux) 모두 이 라이브러리가 없으면 cv2 import 시 에러남
+RUN apt-get update && apt-get install -y \
+    libgl1 \
+    libglib2.0-0 && \
+    rm -rf /var/lib/apt/lists/*
+
+# --no-cache-dir: 이미지 용량을 줄이기 위함
+RUN pip install --no-cache-dir -r requirements.txt
+
+
+
+
+# 7. 실행 명령어
+CMD ["python", "main.py"]
