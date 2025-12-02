@@ -1,6 +1,6 @@
 from collections import deque
+import time
 
-#Node 클래스: ID와 연결 정보(이웃ID, 방향)만 관리
 class Node:
     def __init__(self, node_id):
         self.node_id = node_id
@@ -9,92 +9,134 @@ class Node:
     def add_connection(self, neighbor_id, direction):
         self.connections.append((neighbor_id, direction))
 
-# 2. Graph 클래스
 class Graph:
     def __init__(self):
         self.nodes = {}
 
     def add_edge(self, from_id, to_id, direction):
-        """노드와 연결 정보를 추가합니다"""
-        if from_id not in self.nodes:
-            self.nodes[from_id] = Node(from_id)
-        if to_id not in self.nodes:
-            self.nodes[to_id] = Node(to_id)
-        
-        # 방향 정보와 함께 연결
+        if from_id not in self.nodes: self.nodes[from_id] = Node(from_id)
+        if to_id not in self.nodes: self.nodes[to_id] = Node(to_id)
         self.nodes[from_id].add_connection(to_id, direction)
 
     def find_shortest_hops(self, start_id, target_id):
-        """BFS로 노드 개수가 가장 적은 최단 경로를 찾기"""
-        
-        if start_id not in self.nodes or target_id not in self.nodes:
-            return None # 노드가 존재하지 않음
-
-        # BFS를 위한 큐 생성 및 초기화
+        # ... (이전 BFS 코드와 동일) ...
+        if start_id not in self.nodes or target_id not in self.nodes: return None
         queue = deque([start_id])
-        
-        # 방문 여부 및 경로 추적용 {현재노드: (이전노드, 왔던방향)}
-        # visited 역할도 겸함 (키가 있으면 방문한 것)
         path_info = {start_id: (None, None)}
-
-        while queue:
-            current_id = queue.popleft()
-
-            # BFS는 가장 먼저 발견한 경로가 최단 경로(최소 홉)임이 보장됨
-            if current_id == target_id:
-                return self._reconstruct_path(start_id, target_id, path_info)
-
-            # 현재 노드와 연결된 이웃 탐색
-            for neighbor_id, direction in self.nodes[current_id].connections:
-                # 아직 방문하지 않은 노드만 큐에 추가
-                if neighbor_id not in path_info:
-                    path_info[neighbor_id] = (current_id, direction)
-                    queue.append(neighbor_id)
         
-        return None # 갈 수 있는 길이 없음
+        while queue:
+            curr = queue.popleft()
+            if curr == target_id:
+                return self._reconstruct_path(start_id, target_id, path_info)
+            
+            for neighbor, direction in self.nodes[curr].connections:
+                if neighbor not in path_info:
+                    path_info[neighbor] = (curr, direction)
+                    queue.append(neighbor)
+        return None
 
     def _reconstruct_path(self, start_id, target_id, path_info):
-        """역추적하여 경로 생성"""
         path = []
         curr = target_id
-        
         while curr != start_id:
             prev_node, direction = path_info[curr]
-            path.append((prev_node, direction, curr))
+            path.append((prev_node, direction, curr)) # (현재노드, 할행동, 다음노드)
             curr = prev_node
-        
-        # 역순이므로 뒤집어서 반환
         return path[::-1]
 
-# --- 실행 예시 ---
 
-# 1. 그래프 생성
-subway_map = Graph()
+# --- [로봇 제어를 위한 추가 로직] ---
 
-# 2. 데이터 입력 (거리는 입력하지 않습니다)
-# 상황: A에서 D로 가려함.
-# 경로 1: A -> B -> C -> D (3번 이동)
-# 경로 2: A -> E -> D (2번 이동) -> BFS는 이걸 찾아야 함
+def create_navigation_map(path_list):
+    """
+    BFS 결과를 로봇이 즉시 조회할 수 있는 딕셔너리로 변환
+    Output 예시: {101: 'Left', 105: 'Straight', ...}
+    """
+    nav_map = {}
+    if not path_list:
+        return nav_map
+        
+    for current_node, direction, next_node in path_list:
+        nav_map[current_node] = direction
+        
+    # 마지막 도착 노드에서의 행동 정의 (예: 정지)
+    last_node = path_list[-1][2]
+    nav_map[last_node] = 'STOP'
+    
+    return nav_map
 
-subway_map.add_edge('A', 'B', '우회전')
-subway_map.add_edge('B', 'C', '직진')
-subway_map.add_edge('C', 'D', '좌회전')
 
-subway_map.add_edge('A', 'E', '좌회전')
-subway_map.add_edge('E', 'D', '우회전')
 
-# 3. 길찾기 실행
-start = 'A'
-target = 'D'
+# 1. 지도 데이터 입력 (아루코 마커 ID를 Node ID로 사용)
+robot_map = Graph()
 
-result_path = subway_map.find_shortest_hops(start, target)
+# 예: 1번 마커에서 직진하면 2번, 우회전하면 3번
+robot_map.add_edge(1, 2, 'STRAIGHT')
+robot_map.add_edge(1, 3, 'RIGHT')
+robot_map.add_edge(2, 4, 'LEFT')
+robot_map.add_edge(3, 4, 'STRAIGHT')
+robot_map.add_edge(4, 5, 'STOP_POINT')
 
-# 4. 결과 출력
-print(f"--- [ {start} ] 에서 [ {target} ] 최소 노드 이동 경로 ---")
+# 2. 출발 전 경로 계산
+current_aruco_id = 1
+target_aruco_id = 5
 
-if result_path:
-    print(f"총 거쳐가는 구간 수: {len(result_path)}")
-    for u, direction, v in result_path:
-        print(f"  📍 [{u}] 에서 '{direction}' -> [{v}]")
+print(" 경로 계산 중...")
+raw_path = robot_map.find_shortest_hops(current_aruco_id, target_aruco_id)
+
+if raw_path:
+    # **핵심**: 경로 리스트를 검색하기 쉬운 딕셔너리로 변환
+    navigation_instructions = create_navigation_map(raw_path)
+    print(f" 생성된 네비게이션 명령: {navigation_instructions}")
 else:
-    print("경로가 존재하지 않습니다.")
+    print(" 경로 없음!")
+    navigation_instructions = {}
+
+
+# 3. 로봇 메인 제어 루프 (Simulated)
+# 실제로는 while True: 안에 카메라 읽는 코드가 들어갑니다.
+
+def robot_main_loop():
+    print("\n--- 로봇 주행 시작 ---")
+    
+    # 시뮬레이션을 위해 로봇이 만나는 마커 순서를 가정
+    simulated_detected_markers = [1, 3, 4, 5] 
+    
+    last_processed_marker = -1  # 중복 인식 방지용 변수
+    
+    for detected_id in simulated_detected_markers:
+        print(f"\n[카메라] 아루코 마커 ID {detected_id} 감지됨!")
+        
+        # (중요) 방금 처리한 마커를 계속 보고 있다면 무시 (Debouncing)
+        if detected_id == last_processed_marker:
+            continue
+            
+        # 1. 갈림길 판단: 내 경로상에 있는 마커인가?
+        if detected_id in navigation_instructions:
+            action = navigation_instructions[detected_id]
+            
+            print(f"  >> [판단] 현재 위치 {detected_id}번 노드. 수행할 행동: '{action}'")
+            
+            # 2. 모터 제어 함수 호출
+            if action == 'LEFT':
+                # motor_turn_left()
+                print("  >> 🚗 좌회전 수행")
+            elif action == 'RIGHT':
+                # motor_turn_right()
+                print("  >> 🚗 우회전 수행")
+            elif action == 'STRAIGHT':
+                # motor_go_straight_through_intersection()
+                print("  >> 🚗 교차로 직진 통과")
+            elif action == 'STOP':
+                # motor_stop()
+                print("  >> 🛑 목적지 도착! 정지.")
+                break
+            
+            last_processed_marker = detected_id
+            
+        else:
+            print("  >> [경고] 경로에 없는 마커입니다. (재탐색 필요 혹은 무시)")
+            # 여기서 필요하다면 다시 BFS를 돌려서 경로를 재설정(Rerouting) 할 수 있습니다.
+
+# 실행
+robot_main_loop()
