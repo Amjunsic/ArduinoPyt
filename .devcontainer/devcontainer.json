@@ -1,13 +1,35 @@
+// {
+//     "name": "raspi-opencv-arduino",
+//     "build": {
+//         "dockerfile": "../Dockerfile",
+//         "context": ".."
+//     },
+//     "customizations": {
+//         "vscode": {
+//             "settings": {
+//                 "python.defaultInterpreterPath": "/usr/local/bin/python"
+//             },
+//             "extensions": [
+//                 "ms-python.python",
+//                 "ms-python.vscode-pylance"
+//             ]
+//         }
+//     },
+//     "runArgs": [
+//         "--device=/dev/arduino_port:/dev/ttyACM0",
+//         "--privileged"
+//     ],
+//     "remoteUser": "root"
+// }
 {
-    "name": "Raspi OpenCV Arduino",
-    "build": {
-        "dockerfile": "../Dockerfile",
-        "context": ".."
-    },
+    "name": "Raspi Arduino Dev",
+    "service": "app",
+    "workspaceFolder": "/workspace",
+    "dockerComposeFile": "../docker-compose.yml",
     "customizations": {
         "vscode": {
-            "settings": { 
-                "python.defaultInterpreterPath": "/usr/local/bin/python"
+            "settings": {
+                "python.defaultInterpreterPath": "/usr/bin/python3"
             },
             "extensions": [
                 "ms-python.python",
@@ -15,12 +37,5 @@
             ]
         }
     },
-    
-    "runArgs": [
-        "--device=/dev/ttyACM0:/dev/ttyACM0",
-        "--privileged" 
-    ],
-    
-    
     "remoteUser": "root"
 }

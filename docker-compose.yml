@@ -1,13 +1,30 @@
+# version: '3.8'
+
+# services:
+#   raspi-app:
+#     image: raspi-opencv-arduino  # 빌드해서 올린 이미지 이름
+#     container_name: arduino_controller
+#     restart: unless-stopped
+#     devices:
+#       # [호스트 경로] : [컨테이너 내부 경로]
+#       - "/dev/arduino_port:/dev/ttyACM0"
+#     environment:
+#       - SERIAL_PORT=/dev/ttyACM0
+#       - USE_MOCK=False
+
 version: '3.8'
 
 services:
-  raspi-app:
-    image: Raspi OpenCV Arduino  # 빌드해서 올린 이미지 이름
-    container_name: arduino_controller
-    restart: unless-stopped
-    devices:
-      # [호스트 경로] : [컨테이너 내부 경로]
-      - "/dev/arduino_port:/dev/ttyACM0"
-    environment:
-      - SERIAL_PORT=/dev/ttyACM0
-      - USE_MOCK=False
+  app:
+    # [핵심] 개발 PC에서는 현재 소스로 빌드하고, 이미지 이름은 배포용과 맞춤
+    build:
+      context: .
+      dockerfile: Dockerfile
+
+    # 개발 환경 설정 (볼륨 마운트 등)
+    volumes:
+      - .:/workspace:cached
+
+    # 개발 PC에는 장치가 없으므로 devices 옵션 없음!
+    privileged: true
+    command: sleep infinity
