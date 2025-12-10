@@ -69,4 +69,4 @@ COPY . .
 ENV LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
 ENV PYTHONPATH=/usr/local/lib/python3.11/site-packages:$PYTHONPATH
 
-CMD ["python", "lib/main.py"]
+CMD ["python", "script/main.py"]
