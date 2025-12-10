@@ -1,33 +1,56 @@
-# 기본 이미지: Debian Bookworm 기반 Python 3.11 슬림 버전
-FROM python:3.11-slim-bookworm
+# 1. 베이스 이미지: 라즈베리 파이 OS와 동일한 Debian 12 (Bookworm) Slim
+# ARM64 아키텍처를 자동으로 감지하여 적절한 이미지를 가져옵니다.
+FROM debian:bookworm-slim
 
 # 작업 디렉토리 설정
 WORKDIR /workspace
 
 # 환경 변수 설정
-ENV DEBIAN_FRONTEND=noninteractive
+# - DEBIAN_FRONTEND: 설치 중 사용자 입력 대기 방지
+# - PYTHONUNBUFFERED: 로그가 즉시 출력되도록 설정 (디버깅 용이)
+ENV DEBIAN_FRONTEND=noninteractive \
+    PYTHONUNBUFFERED=1
 
-# 1. GStreamer 런타임 및 필수 플러그인 설치 (최소화된 목록)
-# libglib2.0-0는 GStreamer와 많은 시스템 라이브러리의 기본 의존성이므로 유지합니다.
+# 2. 시스템 패키지 설치
+# - python3-opencv: GStreamer가 포함된 미리 빌드된 OpenCV
+# - gstreamer1.0-*: 각종 플러그인
+# - v4l-utils: 카메라 장치 확인용 (v4l2-ctl)
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
-        # GStreamer 런타임 및 플러그인
+        # Python 기본 환경
+        python3 \
+        python3-pip \
+        python3-full \
+        # OpenCV (GStreamer 포함 버전)
+        python3-opencv \
+        # GStreamer 코어 및 플러그인
         libgstreamer1.0-0 \
         gstreamer1.0-plugins-base \
         gstreamer1.0-plugins-good \
         gstreamer1.0-plugins-bad \
         gstreamer1.0-libav \
-        # GStreamer의 핵심 의존성 (GUI와 무관)
-        libglib2.0-0 \
+        gstreamer1.0-tools \
+        gstreamer1.0-x \
+        gstreamer1.0-alsa \
+        gstreamer1.0-gl \
+        # 비디오 장치 유틸리티 (라즈베리 파이 카메라 디버깅용)
+        v4l-utils \
     && apt-get clean && \
+
+    
     rm -rf /var/lib/apt/lists/* /tmp/*
 
-# 2. requirements.txt 복사 및 Python 종속성 설치
-# requirements.txt에 opencv-python-headless가 포함되어 있어야 합니다.
+# 3. Python 패키지 설치
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
 
-# 3. 애플리케이션 파일 복사
+# [주의] requirements.txt 안에 'opencv-python'이 있다면 제거해야 합니다.
+# 시스템 패키지(apt)로 설치한 OpenCV를 사용하기 위해 pip 설치는 건너뜁니다.
+# --break-system-packages: Debian 12부터 시스템 파이썬에 pip 설치 시 필요
+RUN pip3 install --no-cache-dir --break-system-packages -r requirements.txt
+
+# 4. 소스 코드 복사
 COPY . .
 
-CMD ["python", "script/main.py"]
+# 5. 실행 명령
+# Debian에서는 'python' 대신 'python3' 명령어를 사용합니다.
+CMD ["python3", "script/main.py"]
